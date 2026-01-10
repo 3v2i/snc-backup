@@ -35,7 +35,7 @@ jobs:
           URL="https://www.catastro.gov.py/expediente-electronico/api/public/consultas-publicas/movimiento-expediente?filters=%7B%22anho%22:${ANHO},%22numeroExpediente%22:${EXPEDIENTE}%7D"
 
           SNAPSHOT="work/expediente-${EXPEDIENTE}-${DATE}.json"
-          LATEST="work/expediente-${EXPEDIENTE}-latest.json"
+          LATEST="work/expediente-${EXPEDIENTE}.json"
 
           curl -fsSL "$URL" -o "$SNAPSHOT"
           cp "$SNAPSHOT" "$LATEST"
