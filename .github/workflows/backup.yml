@@ -29,25 +29,33 @@ jobs:
         run: |
           set -e
 
-          URL="https://www.catastro.gov.py/expediente-electronico/api/public/consultas-publicas/movimiento-expediente?filters=%7B%22anho%22:2025,%22numeroExpediente%22:232781%7D"
-          FILE="work/expediente-232781-${DATE}.json"
+          EXPEDIENTE="232781"
+          ANHO="2025"
 
-          curl -fsSL "$URL" -o "$FILE"
+          URL="https://www.catastro.gov.py/expediente-electronico/api/public/consultas-publicas/movimiento-expediente?filters=%7B%22anho%22:${ANHO},%22numeroExpediente%22:${EXPEDIENTE}%7D"
 
-          sha256=$(sha256sum "$FILE" | awk '{print $1}')
+          SNAPSHOT="work/expediente-${EXPEDIENTE}-${DATE}.json"
+          LATEST="work/expediente-${EXPEDIENTE}-latest.json"
+
+          curl -fsSL "$URL" -o "$SNAPSHOT"
+          cp "$SNAPSHOT" "$LATEST"
+
+          sha256=$(sha256sum "$SNAPSHOT" | awk '{print $1}')
 
           jq -n \
-            --arg expediente "232781" \
-            --arg anho "2025" \
+            --arg expediente "$EXPEDIENTE" \
+            --arg anho "$ANHO" \
             --arg url "$URL" \
-            --arg file "$(basename "$FILE")" \
+            --arg snapshot "$(basename "$SNAPSHOT")" \
+            --arg latest "$(basename "$LATEST")" \
             --arg sha "$sha256" \
             --arg timestamp "$TS" \
             '{
               expediente: $expediente,
               anho: $anho,
               url: $url,
-              file: $file,
+              snapshot: $snapshot,
+              latest: $latest,
               sha256: $sha,
               fetched_at: $timestamp
             }' > work/manifest.json
@@ -65,16 +73,17 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: expediente-232781-${{ env.DATE }}
+          tag_name: expediente-${{ env.DATE }}
           name: Expediente 232781 – Backup ${{ env.DATE }}
           body: |
             Backup automático del expediente electrónico (Catastro).
-            Fuente: catastro.gov.py
-            Fecha UTC: ${{ env.TS }}
 
-            - JSON original descargado
-            - SHA256 en manifest.json
+            - Snapshot diario con nombre fechado
+            - Alias estable `latest.json`
+            - Hash SHA-256 del snapshot
             - Manifest firmado con clave GPG
+
+            Fecha UTC: ${{ env.TS }}
           files: |
             work/*.json
             work/manifest.json.asc
